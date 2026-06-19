@@ -1,0 +1,18 @@
+{
+  "target": "facility_delivery",
+  "n_states": 37,
+  "loo_mae": 12.016282745059762,
+  "naive_mae": 22.955880204528853,
+  "loo_r2": 0.6778470855922737,
+  "residual_sd": 14.865594520197714,
+  "chosen_alpha": 3.665241237079626,
+  "coefficients_per_feature_sd": {
+    "mean_log_ppf": -4.254301744915985,
+    "mean_facility_density": 1.8110076753908126,
+    "women_secondary_edu": 19.909137670469505
+  },
+  "baseline_target_mean": 55.63243243243244,
+  "slope_util_per_ppf": 0.002808497890003774,
+  "slope_reference_ppf": 3931.8875544647417,
+  "model_rel_uncertainty": 0.26721093919904554
+}

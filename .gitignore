@@ -1,0 +1,23 @@
+# Environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large RAW source data — NOT committed (see README for download links)
+data/raw/*
+!data/raw/dhs_nigeria_state_indicators.csv
+
+# Runtime-generated
+data/processed/field_reports.csv
+
+# Keep: processed model inputs + trained model so the app runs on clone/deploy
+#   data/processed/lgas_with_features.geojson
+#   models/access_to_care_model.joblib
+#   models/model_metrics.json
