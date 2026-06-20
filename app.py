@@ -36,28 +36,156 @@ from src.simulator import compare_scenarios, explain_chain
 st.set_page_config(page_title="Healthcare Cost-of-Inaction System",
                    page_icon="🩺", layout="wide")
 
-INK, SLATE, TEAL, MIST = "#0F1B2D", "#3A4A5E", "#0E7C7B", "#F4F6F9"
+# "Nigerian atlas" palette — luminous green + Benin-bronze gold on forest ink.
+INK      = "#08130E"   # deep forest-black: app base + signature panel
+PANEL    = "#0E1C15"   # dark forest panel / card surface
+LINE     = "#203A2C"   # green-tinted borders
+TEXT     = "#DBE7DE"   # soft warm-white text
+GRAPHITE = "#85A091"   # dim sage (secondary text)
+TEAL     = "#2FC279"   # luminous Nigerian green (brand / signal)
+AMBER    = "#E6B547"   # Benin-bronze gold (warm secondary accent)
+ALARM    = "#FF6B5A"   # critical / cost emphasis (luminous on dark)
+MIST     = INK         # legacy alias → base
+PAPER    = PANEL       # legacy alias → panel surface
+SLATE    = GRAPHITE    # legacy alias
 
 st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
-html, body, [class*="css"], .stMarkdown {{ font-family: 'Inter', system-ui, sans-serif; }}
-h1, h2, h3, h4 {{ font-family: 'Archivo', system-ui, sans-serif; letter-spacing:-0.01em; color:{INK}; }}
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+html, body, [class*="css"], .stMarkdown, p, span, label {{ font-family:'Public Sans', system-ui, sans-serif; }}
+h1,h2,h3,h4 {{ font-family:'Space Grotesk', system-ui, sans-serif; color:{INK}; letter-spacing:-0.015em; }}
+.stApp {{
+  background-color:#E7ECEE;
+  background-image:
+    radial-gradient(1100px 480px at 84% -8%, rgba(14,124,107,.13), transparent 60%),
+    radial-gradient(820px 440px at -6% -4%, rgba(16,36,43,.06), transparent 55%),
+    radial-gradient(rgba(16,36,43,.05) 1px, transparent 1px);
+  background-size:auto, auto, 26px 26px;
+  background-attachment:fixed;
+}}
 header[data-testid="stHeader"] {{ display:none; }}
-.block-container {{ padding-top: 2.2rem; max-width: 1500px; }}
-.stTabs [data-baseweb="tab"] {{ font-family:'Archivo'; font-weight:600; font-size:0.95rem; }}
-.eyebrow {{ font-family:'IBM Plex Mono', monospace; font-size:0.72rem; letter-spacing:0.18em;
-           text-transform:uppercase; color:{TEAL}; margin-bottom:2px; }}
-.card {{ background:#fff; border:1px solid #E4E9F0; border-radius:12px; padding:18px 20px; color:{INK}; }}
-.card small {{ color:{SLATE}; }}
-.num {{ font-family:'IBM Plex Mono', monospace; }}
-.hero {{ background:linear-gradient(135deg,{INK} 0%, #163049 100%); color:#fff;
-         border-radius:16px; padding:26px 30px; }}
-.hero .big {{ font-family:'Archivo'; font-weight:800; font-size:2.7rem; line-height:1.05; }}
-.hero .sub {{ color:#AFC4D6; font-size:0.9rem; }}
-.pill {{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:0.72rem;
+.block-container {{ padding-top:1.5rem; padding-bottom:3rem; max-width:1480px; }}
+
+/* ── masthead ───────────────────────────────────────────── */
+.coord {{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; letter-spacing:0.22em;
+          text-transform:uppercase; color:{TEAL}; }}
+.mast-title {{ font-family:'Space Grotesk'; font-weight:700; font-size:2.6rem; line-height:1.0;
+              color:{INK}; margin:5px 0 7px; letter-spacing:-0.025em; }}
+.mast-sub {{ font-size:0.96rem; color:{GRAPHITE}; max-width:900px; }}
+.tickrule {{ height:10px; margin-top:14px; border-top:1.5px solid {INK}; opacity:0.85;
+   background:repeating-linear-gradient(90deg, {INK} 0 1px, transparent 1px 38px) top/100% 6px no-repeat; }}
+
+/* ── instrument-readout KPI cards ───────────────────────── */
+.kpi-row {{ display:flex; gap:12px; flex-wrap:wrap; margin:20px 0 4px; }}
+.kpi {{ flex:1; min-width:152px; background:{PAPER}; border:1px solid {LINE}; border-radius:12px;
+        padding:14px 16px 15px; position:relative; overflow:hidden;
+        transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }}
+.kpi:hover {{ transform:translateY(-3px); box-shadow:0 10px 24px rgba(16,36,43,.10); border-color:#C4D0D2; }}
+.kpi::before {{ content:''; position:absolute; top:0; left:18px; width:30px; height:3px;
+                background:linear-gradient(90deg, {TEAL}, #1E9E5C); transition:width .22s ease; }}
+.kpi:hover::before {{ width:54px; }}
+.kpi.alarm::before {{ background:linear-gradient(90deg, {ALARM}, #D9613F); }}
+.kpi .lab {{ font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:0.13em;
+             text-transform:uppercase; color:{GRAPHITE}; }}
+.kpi .val {{ font-family:'Space Grotesk'; font-weight:700; font-size:1.85rem; color:{INK};
+             line-height:1.1; margin-top:7px; }}
+.kpi.alarm .val {{ color:{ALARM}; }}
+.kpi .sub {{ font-size:0.7rem; color:{GRAPHITE}; margin-top:2px; }}
+
+/* ── shared ─────────────────────────────────────────────── */
+.eyebrow {{ font-family:'IBM Plex Mono',monospace; font-size:0.66rem; letter-spacing:0.18em;
+            text-transform:uppercase; color:{TEAL}; margin-bottom:3px; }}
+.card {{ background:{PAPER}; border:1px solid {LINE}; border-radius:14px; padding:18px 20px;
+         color:{INK}; box-shadow:0 1px 2px rgba(16,36,43,.04);
+         transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }}
+.card:hover {{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(16,36,43,.09); border-color:#C4D0D2; }}
+.card small {{ color:{GRAPHITE}; }}
+.num {{ font-family:'IBM Plex Mono',monospace; }}
+.pill {{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:0.7rem;
          font-weight:600; font-family:'IBM Plex Mono'; }}
-small {{ color:{SLATE}; }}
+
+/* ── signature panel: cost of doing nothing ─────────────── */
+.hero {{ position:relative; color:#fff; border-radius:16px; padding:28px 30px; overflow:hidden;
+   background:
+     repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 30px),
+     repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, transparent 1px 30px),
+     linear-gradient(135deg, {INK} 0%, #0b3236 100%);
+   background-size:30px 30px, 30px 30px, 100% 100%;
+   animation:heroDrift 34s linear infinite;
+   transition:box-shadow .25s ease; }}
+@keyframes heroDrift {{ to {{ background-position:30px 30px, -30px 30px, 0 0; }} }}
+.hero:hover {{ box-shadow:0 16px 44px rgba(11,50,54,.32); }}
+.hero::after {{ content:''; position:absolute; top:0; left:0; width:88px; height:4px; background:{ALARM}; }}
+.hero .eyebrow {{ color:#79D0C4; }}
+.hero .big {{ font-family:'Space Grotesk'; font-weight:700; font-size:2.6rem; line-height:1.04; }}
+.hero .sub {{ color:#B4C7D2; font-size:0.92rem; }}
+
+/* ── Streamlit chrome ───────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {{ gap:2px; border-bottom:1px solid {LINE}; }}
+.stTabs [data-baseweb="tab"] {{ font-family:'Space Grotesk'; font-weight:600; font-size:0.9rem;
+                                color:{GRAPHITE}; padding:10px 14px; }}
+.stTabs [aria-selected="true"] {{ color:{INK}; }}
+.stTabs [data-baseweb="tab-highlight"] {{ background:{TEAL}; height:2px; }}
+[data-baseweb="select"] > div {{ border-radius:9px; border-color:{LINE}; }}
+[data-testid="stExpander"] {{ border:1px solid {LINE}; border-radius:12px; background:{PAPER}; }}
+[data-testid="stExpander"] summary {{ font-family:'Space Grotesk'; font-weight:600; color:{INK}; }}
+.stButton>button, [data-testid="stFormSubmitButton"]>button {{
+    font-family:'Space Grotesk'; font-weight:600; border-radius:9px; }}
+[data-testid="stMetricValue"] {{ font-family:'Space Grotesk'; color:{INK}; }}
+[data-testid="stMetricLabel"] p {{ font-family:'IBM Plex Mono'; font-size:0.72rem;
+    letter-spacing:0.06em; color:{GRAPHITE}; }}
+[data-testid="stDataFrame"] {{ font-family:'Public Sans'; }}
+.stTabs [data-baseweb="tab"]:hover {{ color:{INK}; }}
+.stButton>button, [data-testid="stFormSubmitButton"]>button {{ transition:transform .15s ease, box-shadow .15s ease; }}
+.stButton>button:hover, [data-testid="stFormSubmitButton"]>button:hover {{
+    transform:translateY(-1px); box-shadow:0 6px 16px rgba(14,124,107,.28); }}
+[data-testid="stExpander"] {{ transition:border-color .18s ease, box-shadow .18s ease; }}
+[data-testid="stExpander"]:hover {{ border-color:#C4D0D2; box-shadow:0 6px 18px rgba(16,36,43,.06); }}
+@media (prefers-reduced-motion: reduce) {{
+  *, .hero {{ animation:none !important; transition:none !important; }}
+}}
+</style>""", unsafe_allow_html=True)
+
+# ── dark-theme overrides + luminous signature motif ────────────────────────
+st.markdown(f"""
+<style>
+.stApp {{
+  background-color:{INK};
+  background-image:
+    radial-gradient(1200px 580px at 82% -12%, rgba(47,194,121,.13), transparent 60%),
+    radial-gradient(960px 540px at -8% 2%, rgba(230,181,71,.08), transparent 58%),
+    repeating-radial-gradient(circle at 50% -25%, transparent 0 27px, rgba(47,194,121,.024) 27px 28px);
+  background-attachment:fixed;
+}}
+h1,h2,h3,h4 {{ color:{TEXT}; }}
+
+/* masthead with glowing contour rings */
+.masthead {{ position:relative; padding:10px 0 2px; }}
+.masthead::before {{ content:''; position:absolute; right:-30px; top:-86px; width:480px; height:360px;
+  background:repeating-radial-gradient(circle at center, transparent 0 21px, rgba(47,194,121,.17) 21px 22px);
+  -webkit-mask:radial-gradient(circle at center,#000 0%,transparent 68%);
+  mask:radial-gradient(circle at center,#000 0%,transparent 68%);
+  pointer-events:none; animation:ringPulse 7s ease-in-out infinite alternate; }}
+@keyframes ringPulse {{ from {{opacity:.45}} to {{opacity:.95}} }}
+.mast-title {{ color:{TEXT}; font-size:3.05rem; text-shadow:0 0 34px rgba(47,194,121,.20); }}
+.mast-sub {{ color:{GRAPHITE}; }}
+.tickrule {{ border-top-color:{TEAL}; opacity:.6;
+  background:repeating-linear-gradient(90deg,{TEAL} 0 1px, transparent 1px 38px) top/100% 6px no-repeat; }}
+
+/* dark panels + glow hovers */
+.card {{ color:{TEXT}; box-shadow:0 1px 2px rgba(0,0,0,.3); }}
+.card:hover {{ box-shadow:0 14px 36px rgba(0,0,0,.5); border-color:{TEAL}66; }}
+.kpi .val {{ color:{TEXT}; }}
+.kpi:hover {{ box-shadow:0 12px 30px rgba(0,0,0,.5); border-color:{TEAL}66; }}
+.kpi:hover::before {{ box-shadow:0 0 14px {TEAL}; }}
+
+/* native chrome on dark */
+.stTabs [aria-selected="true"] {{ color:{TEXT}; }}
+.stTabs [data-baseweb="tab"]:hover {{ color:{TEXT}; }}
+[data-testid="stExpander"] summary {{ color:{TEXT}; }}
+[data-testid="stMetricValue"] {{ color:{TEXT}; }}
+[data-baseweb="select"] > div {{ background:{PANEL}; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -106,27 +234,50 @@ def ppf_str(v):
     return "∞ (no facilities)" if pd.isna(v) or v == np.inf else f"{v:,.0f}"
 
 
+def dark_chart(ch, height=300):
+    """Apply the dark atlas theme to an Altair chart."""
+    return (ch.properties(height=height)
+            .configure(background="transparent")
+            .configure_view(stroke=None)
+            .configure_axis(labelColor=TEXT, titleColor=GRAPHITE, gridColor="#16281D",
+                            domainColor=LINE, tickColor=LINE,
+                            labelFont="Public Sans", titleFont="Space Grotesk")
+            .configure_legend(labelColor=TEXT, titleColor=GRAPHITE, labelFont="Public Sans"))
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # HEADER + KPI STRIP
 # ──────────────────────────────────────────────────────────────────────────
-st.markdown('<div class="eyebrow">Primary Healthcare · Federal Republic of Nigeria</div>',
-            unsafe_allow_html=True)
-st.title("Healthcare Cost-of-Inaction Intelligence System")
-st.markdown(
-    "<small>A decision-support system for state primary-healthcare directors: "
-    "locate underserved communities, then model the long-term cost of delaying "
-    "intervention. <b>It informs allocation decisions — it does not make them.</b></small>",
-    unsafe_allow_html=True)
-st.write("")
-
-k = st.columns(6)
 crit = lgas[lgas.risk_level == "critical"]
-k[0].metric("LGAs analysed", f"{len(lgas):,}")
-k[1].metric("Critical deserts", f"{len(crit):,}")
-k[2].metric("People in critical zones", f"{crit.population.sum()/1e6:.1f}M")
-k[3].metric("High-risk LGAs", f"{(lgas.risk_level=='high').sum():,}")
-k[4].metric("Model R² (LOO)", f"{M.get('loo_r2', float('nan')):.2f}")
-k[5].metric("Flagged for review", f"{int(lgas.needs_human_review.sum()):,}")
+
+# ── masthead: coordinate eyebrow, thesis title, lat/long tick rule ─────────
+st.markdown(f"""
+<div class="masthead">
+<div class="coord">Primary Healthcare Intelligence · Federal Republic of Nigeria · 9°08′N 8°40′E</div>
+<div class="mast-title">The Cost of Doing Nothing</div>
+<div class="mast-sub">Locate Nigeria's healthcare deserts, then model what delay costs — in lives and in
+money — across all {len(lgas):,} local government areas. <b style="color:{TEXT}">This system
+informs allocation decisions; it does not make them.</b></div>
+<div class="tickrule"></div>
+</div>
+""", unsafe_allow_html=True)
+
+
+def kpi(lab, val, sub, alarm=False):
+    cls = "kpi alarm" if alarm else "kpi"
+    return (f"<div class='{cls}'><div class='lab'>{lab}</div>"
+            f"<div class='val'>{val}</div><div class='sub'>{sub}</div></div>")
+
+
+st.markdown(
+    "<div class='kpi-row'>" + "".join([
+        kpi("LGAs analysed", f"{len(lgas):,}", "local government areas"),
+        kpi("Critical deserts", f"{len(crit):,}", "&gt;10,000 people per clinic", alarm=True),
+        kpi("Exposed population", f"{crit.population.sum()/1e6:.1f}M", "in critical zones", alarm=True),
+        kpi("High risk", f"{(lgas.risk_level == 'high').sum():,}", "7,500–10,000 per clinic"),
+        kpi("Model R²", f"{M.get('loo_r2', float('nan')):.2f}", "leave-one-state-out CV"),
+        kpi("Flagged for review", f"{int(lgas.needs_human_review.sum()):,}", "low model confidence"),
+    ]) + "</div>", unsafe_allow_html=True)
 
 st.write("")
 tab_sim, tab_map, tab_model, tab_field = st.tabs(
@@ -155,11 +306,16 @@ with tab_map:
     with left:
         st.markdown(f'<div class="eyebrow">Clinical access risk · {len(flt)} LGAs shown</div>',
                     unsafe_allow_html=True)
-        m = folium.Map(location=[9.0, 8.0], zoom_start=6, tiles="CartoDB positron",
-                       min_zoom=6, max_zoom=12, max_bounds=True)
-        m.fit_bounds([[3.8, 2.6], [14.0, 14.8]])          # frame Nigeria on load
-        m.options["maxBounds"] = [[2.5, 1.5], [14.8, 15.8]]   # hard pan limit
-        m.options["maxBoundsViscosity"] = 1.0                 # resist crossing it
+        m = folium.Map(location=[9.1, 8.1], zoom_start=6, tiles="CartoDB dark_matter",
+                       min_zoom=5, max_zoom=12, max_bounds=True)
+        if sel_state:                                # zoom to the selected state(s)
+            _b = flt.total_bounds  # minx, miny, maxx, maxy
+            if np.all(np.isfinite(_b)):
+                m.fit_bounds([[_b[1], _b[0]], [_b[3], _b[2]]], padding=(8, 8))
+        else:                                        # frame the whole country on first load
+            m.fit_bounds([[4.0, 2.7], [13.9, 14.7]])
+        m.options["maxBounds"] = [[2.5, 1.0], [20.0, 16.0]]   # big northern headroom for popups
+        m.options["maxBoundsViscosity"] = 0.25                # loose, so popups auto-pan into view
         for _, r in flt.iterrows():
             color = C.RISK_COLORS.get(r.risk_level, "#888")
             review = ("<div style='background:#FFF4E5;border:1px solid #FFB74D;"
@@ -186,18 +342,19 @@ with tab_map:
                 folium.GeoJson(
                     r.geometry.__geo_interface__,
                     style_function=lambda _f, c=color: {
-                        "fillColor": c, "color": "#33415588",
-                        "weight": 0.4, "fillOpacity": 0.72},
+                        "fillColor": c, "color": "#EAF2EE",
+                        "weight": 0.5, "opacity": 0.7, "fillOpacity": 0.82},
                     tooltip=f"{r.lga_name} · {r.risk_level.upper()}",
                     popup=folium.Popup(popup, max_width=290)).add_to(m)
             except Exception:
                 pass
 
         legend = ("<div style='position:fixed;bottom:28px;left:28px;z-index:1000;"
-                  "background:#fff;padding:10px 14px;border-radius:10px;"
-                  "box-shadow:0 2px 8px rgba(15,27,45,.18);font-family:Inter;"
-                  "font-size:12px;color:#0F1B2D'>"
-                  "<div style='font-weight:700;margin-bottom:5px'>People per facility</div>")
+                  "background:rgba(11,22,16,.93);padding:11px 15px;border-radius:10px;"
+                  "border:1px solid #203A2C;backdrop-filter:blur(4px);"
+                  "box-shadow:0 6px 20px rgba(0,0,0,.55);font-family:Inter;"
+                  "font-size:12px;color:#DBE7DE'>"
+                  "<div style='font-weight:700;margin-bottom:5px;font-family:Space Grotesk'>People per facility</div>")
         for lvl, lbl in [("critical", "&gt;10,000"), ("high", "7,500–10,000"),
                          ("moderate", "5,000–7,500"), ("functional", "&lt;5,000")]:
             legend += (f"<div><span style='color:{C.RISK_COLORS[lvl]};font-size:15px'>■</span>"
@@ -321,7 +478,7 @@ with tab_sim:
                 f"<div class='card' style='border:2px solid {border}'>"
                 f"<div style='font-family:Archivo;font-weight:700'>{name}</div>{tag}"
                 f"<div style='margin-top:10px'><small>Deaths averted (p50)</small><br>"
-                f"<span class='num' style='font-size:1.5rem;color:{INK}'>{d['p50']:.0f}</span>"
+                f"<span class='num' style='font-size:1.5rem;color:{TEXT}'>{d['p50']:.0f}</span>"
                 f"<small> &nbsp;{d['p10']:.0f}–{d['p90']:.0f}</small></div>"
                 f"<div style='margin-top:8px'><small>Intervention cost</small><br>"
                 f"<span class='num'>{money(h5['intervention_cost_usd'])}</span></div>"
@@ -382,17 +539,16 @@ with tab_sim:
             st.markdown('<div class="eyebrow">Cumulative deaths averted over time</div>',
                         unsafe_allow_html=True)
             band = (alt.Chart(pdf[pdf.Scenario == best])
-                    .mark_area(opacity=0.18, color=TEAL)
+                    .mark_area(opacity=0.22, color=TEAL)
                     .encode(x=alt.X("Year:O", title="Years from now"),
                             y=alt.Y("p10:Q", title="Deaths averted (cumulative)"),
                             y2="p90:Q"))
-            lines = (alt.Chart(pdf).mark_line(point=True, strokeWidth=2)
+            lines = (alt.Chart(pdf).mark_line(point=True, strokeWidth=2.5)
                      .encode(x="Year:O", y="p50:Q",
                              color=alt.Color("Scenario:N",
+                                             scale=alt.Scale(range=[TEAL, AMBER, "#7FB3FF", "#C792EA"]),
                                              legend=alt.Legend(orient="bottom"))))
-            st.altair_chart((band + lines).properties(height=300)
-                            .configure_axis(labelFont="Inter", titleFont="Archivo"),
-                            use_container_width=True)
+            st.altair_chart(dark_chart(band + lines, 300), use_container_width=True)
             st.caption(f"Shaded band = 10th–90th percentile for the recommended plan ({best}).")
 
         with cc2:
@@ -406,7 +562,7 @@ with tab_sim:
                 f"<b class='num'>{h5['deaths_averted']['p50']:.0f}</b></div>"
                 f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #eee'>"
                 f"<span>Wait 5 years — deaths averted</span><b class='num'>~0</b></div>"
-                f"<div style='display:flex;justify-content:space-between;padding:8px 0;border-top:2px solid {INK};margin-top:4px'>"
+                f"<div style='display:flex;justify-content:space-between;padding:8px 0;border-top:2px solid {LINE};margin-top:4px'>"
                 f"<span><b>Cost of the delay</b></span>"
                 f"<b class='num' style='color:#d62728'>{h5['deaths_averted']['p50']:.0f} lives · {money(h5['cost_of_inaction_usd'])}</b></div>"
                 f"<div style='margin-top:8px'><small>Benefits compound annually; a plan started in year 5 "
@@ -456,14 +612,12 @@ with tab_model:
         cdf = pd.DataFrame([{"Driver": label.get(kk, kk), "Effect": vv}
                             for kk, vv in coefs.items()])
         if len(cdf):
-            bar = (alt.Chart(cdf).mark_bar()
+            bar = (alt.Chart(cdf).mark_bar(cornerRadius=2)
                    .encode(x=alt.X("Effect:Q", title="Std. effect on facility delivery (pp)"),
                            y=alt.Y("Driver:N", sort="-x", title=None),
                            color=alt.condition(alt.datum.Effect > 0,
-                                               alt.value(TEAL), alt.value("#C44"))))
-            st.altair_chart(bar.properties(height=160)
-                            .configure_axis(labelFont="Inter", titleFont="Archivo"),
-                            use_container_width=True)
+                                               alt.value(TEAL), alt.value(ALARM))))
+            st.altair_chart(dark_chart(bar, 160), use_container_width=True)
         st.markdown(
             "<small><b>How to read this:</b> women's education is the biggest reason some "
             "states already have high facility use — it's <b>context the tool can't change</b>, "
