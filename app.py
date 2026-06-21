@@ -20,11 +20,11 @@ from src.simulator import compare_scenarios, explain_chain
 st.set_page_config(page_title="Foresight · The Cost of Doing Nothing",
                    page_icon="🩺", layout="wide")
 
-# ── theme toggle (must come after set_page_config) ─────────────────────────
-_, _tcol = st.columns([8, 1.4])
+_, _tcol = st.columns([6, 2])
 with _tcol:
-    light_on = st.toggle("Light mode", value=False)
-DARK = not light_on
+    mode = st.radio("Theme", ["Dark", "Light"], horizontal=True,
+                    label_visibility="collapsed")
+DARK = mode == "Dark"
 
 # ──────────────────────────────────────────────────────────────────────────
 # DESIGN SYSTEM — one palette, switched by theme.
@@ -51,10 +51,10 @@ else:
             "radial-gradient(rgba(19,38,28,.05) 1px, transparent 1px)")
     app_bg_size="auto, auto, 26px 26px"
 
-TEAL="#2FC279"   # brand signal — constant (fills, rings, pills, recommended)
+TEAL="#2FC279" 
 AMBER="#E6B547"
 ALARM="#FF6B5A"
-HERO1="#08130E"; HERO2="#0b3236"   # signature panel stays dark in both themes
+HERO1="#08130E"; HERO2="#0b3236"
 # legacy aliases
 MIST=INK; PAPER=PANEL; SLATE=GRAPHITE
 
