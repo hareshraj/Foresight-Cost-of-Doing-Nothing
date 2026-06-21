@@ -94,8 +94,8 @@ src/
 
 ## Team
 
-Haresh Raj
-Muhammad Saad Umar
+Haresh Raj,
+Muhammad Saad Umar,
 Jesutomiwo Sapphire
 
 ## License
