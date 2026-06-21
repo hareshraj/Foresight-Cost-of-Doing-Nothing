@@ -75,7 +75,7 @@ All data is aggregated and open. No individual-level or personal data is used.
 
 ## Responsible AI
 
-Uncertainty ranges on every estimate; explicit **bypass conditions**; **two-cycle** human review before any resource moves; drift monitoring on each DHS release; documented **non-goals**. Full assumptions, coefficients, sources, and limitations: [`docs/ASSUMPTIONS.md`](docs/ASSUMPTIONS.md).
+Uncertainty ranges on every estimate; explicit **bypass conditions**; **two-cycle** human review before any resource moves; drift monitoring on each DHS release;
 
 ## Repo structure
 
@@ -88,13 +88,13 @@ src/
   build_features.py        feature pipeline (CRS-safe join, risk, confidence, DHS merge)
   train_model.py           access→care model + nested LOO CV
   simulator.py             cost-of-inaction Monte-Carlo engine
-tests/smoke_test_model.py  synthetic pipeline test
-docs/ASSUMPTIONS.md        sources, coefficients, limitations, bypass conditions
 ```
 
 ## Team
 
-[Add your names here]
+Haresh Raj
+Muhammad Saad Umar
+Jesutomiwo Sapphire
 
 ## License
 

@@ -1,27 +1,3 @@
-"""
-simulator.py  (v2 -- cumulative horizons)
-=========================================
-STEP 4 -- the heart of Direction A. Turns the static risk map into a
-"cost of doing nothing" engine.
-
-v2 change: outcomes are now CUMULATIVE over the horizon (sum of each year 1..H,
-discounted), not a single-year snapshot at year H. The cost of inaction
-compounds year over year, so cumulative is the correct figure for this tool.
-
-CAUSAL CHAIN (each hop labelled by where its number comes from):
-    intervention (build facilities / add staff / supply chain)
-      -> change in people-per-facility                      [arithmetic]
-      -> change in care utilisation (pp)                    [FITTED model slope]
-      -> reduction in preventable U5 deaths                 [literature coef, config]
-      -> deaths & DALYs averted, $ value, cost of inaction  [economic assumptions, config]
-
-UNCERTAINTY: each Monte-Carlo run samples the literature coefficients AND a
-noisy version of the fitted slope (model_rel_uncertainty), held constant across
-years within a run. Results return as (p10, p50, p90) -- never a single point.
-
-No Streamlit dependency -> unit-testable and reusable.
-"""
-
 import sys
 from pathlib import Path
 
@@ -32,7 +8,6 @@ import config as C
 
 
 def apply_intervention(facility_count, intervention):
-    """Return (new_facility_count, capital_cost, recurring_cost_per_year)."""
     kind = intervention.get("kind", "do_nothing")
     if kind == "do_nothing":
         return facility_count, 0.0, 0.0
@@ -53,12 +28,6 @@ def apply_intervention(facility_count, intervention):
 
 def simulate_lga(lga, intervention, model_slope_per_ppf, model_rel_uncertainty,
                  horizons=None, n_runs=None, seed=0):
-    """
-    Monte-Carlo projection for one LGA under one intervention, CUMULATIVE over
-    each horizon. Returns dict keyed by horizon year with p10/p50/p90 of
-    cumulative deaths_averted, dalys_averted, discounted benefit_usd, plus
-    deterministic cost fields.
-    """
     horizons = sorted(horizons or C.HORIZONS_YEARS)
     n_runs = n_runs or C.MONTE_CARLO_RUNS
     rng = np.random.default_rng(seed)
@@ -78,7 +47,6 @@ def simulate_lga(lga, intervention, model_slope_per_ppf, model_rel_uncertainty,
         vpf = rng.uniform(*C.VACCINE_PREVENTABLE_FRACTION_RANGE)
         elast = rng.uniform(*C.UTILISATION_TO_MORTALITY_ELASTICITY_RANGE)
         val_per_daly = rng.uniform(*C.VALUE_PER_DALY_USD_RANGE)
-        # model (slope) uncertainty: one noisy slope per run, held across years
         slope = model_slope_per_ppf * (1 + rng.normal(0, model_rel_uncertainty))
 
         cum_deaths = 0.0
@@ -87,9 +55,9 @@ def simulate_lga(lga, intervention, model_slope_per_ppf, model_rel_uncertainty,
         for y in range(1, max_h + 1):
             pop_y = pop0 * (1 + C.ANNUAL_POP_GROWTH_RATE) ** y
             births_y = pop_y * C.CRUDE_BIRTH_RATE_PER_1000 / 1000.0
-            ppf_base = pop_y / fac0 if fac0 > 0 else pop_y      # do-nothing path
+            ppf_base = pop_y / fac0 if fac0 > 0 else pop_y
             ppf_after = pop_y / fac1 if fac1 > 0 else pop_y
-            delta = ppf_base - ppf_after                        # >0 = improvement
+            delta = ppf_base - ppf_after
             util_gain = max(0.0, slope * delta) if delta > 0 else 0.0
 
             preventable = births_y * u5mr * vpf
@@ -119,7 +87,6 @@ def simulate_lga(lga, intervention, model_slope_per_ppf, model_rel_uncertainty,
             "dalys_averted": pctl(dalys[:, j]),
             "benefit_usd": benefit,
             "intervention_cost_usd": total_cost,
-            # cost of inaction = cumulative health value forgone by NOT acting
             "cost_of_inaction_usd": benefit["p50"],
             "net_benefit_usd": benefit["p50"] - total_cost,
         }
@@ -127,17 +94,11 @@ def simulate_lga(lga, intervention, model_slope_per_ppf, model_rel_uncertainty,
 
 
 def compare_scenarios(lga, scenarios, model_slope_per_ppf, model_rel_uncertainty):
-    """Run several named interventions for one LGA; always includes do_nothing."""
     return {name: simulate_lga(lga, iv, model_slope_per_ppf, model_rel_uncertainty)
             for name, iv in scenarios.items()}
 
 
 def explain_chain(lga, intervention, model_slope_per_ppf):
-    """
-    Plain central-estimate walkthrough of ONE intervention, for the dashboard's
-    "how this number is built" explainer. No Monte-Carlo here -- just the median
-    chain so a non-technical user can follow it step by step.
-    """
     pop = float(lga["population"])
     fac0 = float(lga["facility_count"])
     fac1, capital, recurring = apply_intervention(fac0, intervention)

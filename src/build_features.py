@@ -1,25 +1,3 @@
-"""
-build_features.py
-=================
-STEP 2. The corrected, hardened replacement for your original data_loader.py.
-
-What changed vs your version (and why it matters):
-  * CRS SAFETY: facilities are reprojected to the boundary CRS before the
-    spatial join. A silent CRS mismatch was the single biggest latent bug --
-    it would misassign facilities and quietly corrupt every downstream number.
-  * THRESHOLDS come from config (one source of truth) -- fixes the 5922-vs-5000
-    discrepancy between your loader and your dashboard.
-  * HONEST CONFIDENCE: instead of a circular ML model that just memorises your
-    own threshold rule, "confidence" is a transparent data-robustness score
-    (how borderline the LGA is + how complete its inputs are). This is
-    defensible to a judge; a fake ML probability is not.
-  * DHS OUTCOMES merged on at state level, so the simulator has something real
-    to project.
-
-Run (after fetch_dhs.py):
-    python src/build_features.py
-"""
-
 import sys
 import re
 from pathlib import Path
@@ -42,8 +20,6 @@ import config as C
 def normalise_state(name):
     if not isinstance(name, str):
         return name
-    # DHS prefixes subnational labels with indentation dots, e.g. "..Abia" or
-    # "..FCT Abuja". Strip any leading non-letter characters before matching.
     n = re.sub(r"^[^A-Za-z]+", "", name).strip().lower()
     aliases = {
         "fct abuja": "federal capital territory",
@@ -100,21 +76,18 @@ def robustness_confidence(row):
     """
     conf = 1.0
 
-    # (1) distance to nearest threshold boundary, as a fraction of the band width
     ppf = row["pop_per_facility"]
     if ppf == np.inf or pd.isna(ppf):
-        conf -= 0.25  # no facilities at all: real signal but inherently uncertain
+        conf -= 0.25 
     else:
         edges = [C.RISK_THRESHOLDS["moderate"],
                  C.RISK_THRESHOLDS["high"],
                  C.RISK_THRESHOLDS["critical"]]
         nearest = min(abs(ppf - e) for e in edges)
-        # within 10% of a boundary -> shave up to 0.3
         rel = nearest / max(ppf, 1)
         if rel < 0.10:
             conf -= 0.30 * (1 - rel / 0.10)
 
-    # (2) completeness
     if row.get("population", 0) <= 0:
         conf -= 0.40
     if row.get("facility_count", 0) <= 1:
@@ -124,7 +97,6 @@ def robustness_confidence(row):
 
 
 def build():
-    # ── 1. boundaries ──────────────────────────────────────────────────────
     print("Loading LGA boundaries...")
     lgas = gpd.read_file(C.BOUNDARIES_PATH)
     lgas = lgas[["adm2_name", "adm1_name", "adm2_pcode",
@@ -136,12 +108,10 @@ def build():
         lgas = lgas.set_crs(4326)
     print(f"  {len(lgas)} LGAs (CRS={lgas.crs})")
 
-    # ── 2. population ──────────────────────────────────────────────────────
     print("\nComputing population per LGA...")
     lgas["population"] = population_per_lga(lgas, C.WORLDPOP_PATH)
     print(f"  national estimate: {lgas['population'].sum():,.0f}")
 
-    # ── 3. facilities (CRS-SAFE join) ──────────────────────────────────────
     print("\nLoading & joining facilities...")
     fac = gpd.read_file(C.FACILITIES_PATH)
     if fac.crs is None:
@@ -157,7 +127,6 @@ def build():
     lgas = lgas.merge(counts, on="lga_pcode", how="left")
     lgas["facility_count"] = lgas["facility_count"].fillna(0).astype(int)
 
-    # ── 4. core access features ────────────────────────────────────────────
     lgas["pop_per_facility"] = np.where(
         lgas["facility_count"] > 0,
         lgas["population"] / lgas["facility_count"].replace(0, np.nan),
@@ -166,7 +135,6 @@ def build():
         lgas["area_sqkm"] > 0,
         (lgas["facility_count"] / lgas["area_sqkm"]) * 100, 0.0)
 
-    # ── 5. rule-based risk + honest confidence ─────────────────────────────
     lgas["risk_level"] = lgas.apply(
         lambda r: classify_risk(r["pop_per_facility"], r["facility_count"]),
         axis=1)
@@ -174,7 +142,6 @@ def build():
     lgas["needs_human_review"] = (
         lgas["prediction_confidence"] < C.HUMAN_REVIEW_CONFIDENCE_THRESHOLD)
 
-    # ── 6. merge DHS state outcomes ────────────────────────────────────────
     if C.DHS_CLEAN_CSV.exists():
         print("\nMerging DHS state-level outcomes...")
         dhs = pd.read_csv(C.DHS_CLEAN_CSV)
@@ -190,7 +157,6 @@ def build():
         print("\n[!] DHS CSV not found -- run fetch_dhs.py first. "
               "Continuing without outcomes (simulator will use national baseline).")
 
-    # ── 7. save ────────────────────────────────────────────────────────────
     lgas.to_file(C.FEATURES_GEOJSON, driver="GeoJSON")
     print(f"\nSaved -> {C.FEATURES_GEOJSON}")
     print("\nRisk distribution:")

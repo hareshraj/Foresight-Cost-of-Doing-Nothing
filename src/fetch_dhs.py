@@ -1,26 +1,3 @@
-"""
-fetch_dhs.py
-============
-STEP 1 of the pipeline. Pulls Nigeria subnational (state / zone level) health
-OUTCOME indicators from the DHS Program API and writes a tidy CSV that the
-feature builder merges onto the LGA map.
-
-Why this exists: your 3 original sources (GRID3 facilities, WorldPop population,
-HDX boundaries) describe ACCESS only. They contain no health outcomes, so there
-is nothing to project forward in a "cost of doing nothing" simulator. DHS fills
-that gap and is free + open.
-
-Run:
-    python src/fetch_dhs.py
-
-If your machine has no internet / the API is down, see fetch_from_manual_csv()
-at the bottom for the STATcompiler manual-export fallback.
-
-API reference: https://api.dhsprogram.com/#/api-data.cfm
-Example verified call:
-    https://api.dhsprogram.com/rest/dhs/data?indicatorIds=CM_ECMR_C_U5M&countryIds=NG&breakdown=subnational&f=json
-"""
-
 import sys
 import json
 import time
@@ -37,7 +14,6 @@ import config as C
 # Low-level API helper
 # ──────────────────────────────────────────────────────────────────────────
 def _get(params, max_retries=4, timeout=30):
-    """GET with exponential backoff. Returns parsed JSON or raises."""
     for attempt in range(max_retries):
         try:
             resp = requests.get(C.DHS_API_BASE, params=params, timeout=timeout)
@@ -52,10 +28,6 @@ def _get(params, max_retries=4, timeout=30):
 
 
 def fetch_indicator(indicator_id, breakdown="subnational"):
-    """
-    Pull every page of one indicator for Nigeria at the given breakdown level.
-    Returns a list of raw DHS records (dicts).
-    """
     records, page, total_pages = [], 1, 1
     while page <= total_pages:
         params = {
@@ -78,11 +50,6 @@ def fetch_indicator(indicator_id, breakdown="subnational"):
 # Indicator search helper -- use this if any ID in config returns nothing
 # ──────────────────────────────────────────────────────────────────────────
 def search_indicators(keyword):
-    """
-    Print DHS indicators whose label matches `keyword`, so you can correct any
-    indicator ID that silently returns no data. Example:
-        python -c "from src.fetch_dhs import search_indicators; search_indicators('facility')"
-    """
     url = "https://api.dhsprogram.com/rest/dhs/indicators"
     resp = requests.get(url, params={"f": "json", "perpage": 5000}, timeout=60)
     resp.raise_for_status()
@@ -115,7 +82,6 @@ def _is_preferred(r):
 
 
 def clean_state_rows(records):
-    """Return (list-of-one-row-per-state, latest_year) for a single indicator."""
     state_rows = [r for r in records if r.get("LevelRank") == STATE_LEVEL_RANK]
     if not state_rows:
         return [], None
@@ -123,19 +89,16 @@ def clean_state_rows(records):
     latest_year = max(int(r.get("SurveyYear", 0)) for r in state_rows)
     rows = [r for r in state_rows if int(r.get("SurveyYear", 0)) == latest_year]
 
-    # collapse recall-window duplicates
     preferred = [r for r in rows if _is_preferred(r)]
     if preferred:
         rows = preferred
     else:
-        # no preferred flag -> pick the single recall window with widest coverage
         from collections import Counter
         windows = Counter(r.get("ByVariableLabel") for r in rows)
         if windows:
             chosen = windows.most_common(1)[0][0]
             rows = [r for r in rows if r.get("ByVariableLabel") == chosen]
 
-    # final defensive dedup: one row per state label
     seen, clean = set(), []
     for r in rows:
         label = r.get("CharacteristicLabel")
@@ -193,18 +156,14 @@ def fetch_all():
             "every indicator ID is stale. Use fetch_from_manual_csv() instead."
         )
 
-    # Save raw (for your data-disclosure / reproducibility section)
     C.DHS_RAW_JSON.write_text(json.dumps(raw_by_indicator, indent=2))
 
     long_df = pd.DataFrame(tidy_rows)
 
-    # Pivot to one row per state, one column per indicator.
     wide = long_df.pivot_table(
         index="state_raw", columns="indicator", values="value", aggfunc="first"
     ).reset_index()
 
-    # Carry the confidence interval of the headline mortality indicator through,
-    # so the dashboard can show DHS's own uncertainty.
     ci = (long_df[long_df["indicator"] == "u5_mortality"]
           [["state_raw", "ci_low", "ci_high"]]
           .rename(columns={"ci_low": "u5_mortality_ci_low",
@@ -219,15 +178,6 @@ def fetch_all():
 
 
 def fetch_from_manual_csv(downloaded_csv_path):
-    """
-    FALLBACK if the API is unreachable. Steps:
-      1. Go to https://dhsprogram.com/data/statcompiler.cfm
-      2. Country = Nigeria; latest survey; indicators = under-5 mortality,
-         fully vaccinated, facility delivery, 4+ ANC; breakdown = by Region/State.
-      3. Export to CSV, save it, pass the path here.
-    This normalises whatever STATcompiler exports into the same schema as
-    fetch_all() so the rest of the pipeline doesn't care which path you used.
-    """
     df = pd.read_csv(downloaded_csv_path)
     print("Manual CSV loaded; columns:", list(df.columns))
     print("Rename/rearrange columns to match: "

@@ -1,17 +1,3 @@
-"""
-app.py -- Nigeria Healthcare "Cost of Doing Nothing" decision-support dashboard
-===============================================================================
-Run from the project root:  streamlit run app.py
-
-Four tabs:
-  1. Risk Map           -- where the deserts are (entry point, not the product)
-  2. Cost-of-Inaction   -- the simulator: what waiting costs, scenario comparison
-  3. Model & Governance -- evaluation, bypass conditions, human-in-loop, drift
-  4. Field Reports      -- offline zero-signal capture
-
-Reads data/processed/lgas_with_features.geojson and models/model_metrics.json.
-"""
-
 import sys
 import json
 from pathlib import Path
@@ -72,7 +58,10 @@ header[data-testid="stHeader"] {{ display:none; }}
           text-transform:uppercase; color:{TEAL}; }}
 .mast-title {{ font-family:'Space Grotesk'; font-weight:700; font-size:2.6rem; line-height:1.0;
               color:{INK}; margin:5px 0 7px; letter-spacing:-0.025em; }}
-.mast-sub {{ font-size:0.96rem; color:{GRAPHITE}; max-width:900px; }}
+.mast-thesis {{ font-family:'Space Grotesk'; font-weight:700; font-size:2rem;
+   line-height:1.05; color:{TEAL}; letter-spacing:-0.02em; margin:0 0 15px;
+   text-shadow:0 0 26px rgba(47,194,121,.18); }}
+.mast-sub {{ color:{GRAPHITE}; font-size:1.12rem; line-height:1.5; max-width:860px; }}
 .tickrule {{ height:10px; margin-top:14px; border-top:1.5px solid {INK}; opacity:0.85;
    background:repeating-linear-gradient(90deg, {INK} 0 1px, transparent 1px 38px) top/100% 6px no-repeat; }}
 
@@ -147,7 +136,6 @@ header[data-testid="stHeader"] {{ display:none; }}
 }}
 </style>""", unsafe_allow_html=True)
 
-# ── dark-theme overrides + luminous signature motif ────────────────────────
 st.markdown(f"""
 <style>
 .stApp {{
@@ -250,14 +238,16 @@ def dark_chart(ch, height=300):
 # ──────────────────────────────────────────────────────────────────────────
 crit = lgas[lgas.risk_level == "critical"]
 
-# ── masthead: coordinate eyebrow, thesis title, lat/long tick rule ─────────
 st.markdown(f"""
 <div class="masthead">
 <div class="coord">Primary Healthcare Intelligence · Federal Republic of Nigeria · 9°08′N 8°40′E</div>
-<div class="mast-title">The Cost of Doing Nothing</div>
-<div class="mast-sub">Locate Nigeria's healthcare deserts, then model what delay costs — in lives and in
-money — across all {len(lgas):,} local government areas. <b style="color:{TEXT}">This system
-informs allocation decisions; it does not make them.</b></div>
+<div class="mast-title">Foresight</div>
+<div class="mast-thesis">The Cost of Doing Nothing</div>
+<div class="mast-sub">Across Nigeria's {len(lgas):,} local government areas, this system finds the
+<b style="color:{TEXT}">healthcare deserts</b> and models what waiting costs —
+<b style="color:{TEXT}">before the bill comes due in lives</b>.</div>
+<div class="mast-sub" style="margin-top:8px;font-size:0.82rem;opacity:.75;max-width:none">This
+system informs allocation decisions; it does not make them.</div>
 <div class="tickrule"></div>
 </div>
 """, unsafe_allow_html=True)
@@ -422,7 +412,6 @@ with tab_sim:
                 if not pd.isna(lga.pop_per_facility) else float(lga.population)}
     res = compare_scenarios(lga_d, scen, SLOPE, REL_UNC)
 
-    # recommended = best net benefit at 5yr among real interventions
     actions = [n for n in scen if n != "Do nothing"]
     best = max(actions, key=lambda n: res[n][5]["net_benefit_usd"]) if actions else None
 
@@ -540,14 +529,16 @@ with tab_sim:
                         unsafe_allow_html=True)
             band = (alt.Chart(pdf[pdf.Scenario == best])
                     .mark_area(opacity=0.22, color=TEAL)
-                    .encode(x=alt.X("Year:O", title="Years from now"),
+                    .encode(x=alt.X("Year:O", title="Years from now",
+                                    axis=alt.Axis(labelAngle=-90)),
                             y=alt.Y("p10:Q", title="Deaths averted (cumulative)"),
                             y2="p90:Q"))
             lines = (alt.Chart(pdf).mark_line(point=True, strokeWidth=2.5)
-                     .encode(x="Year:O", y="p50:Q",
-                             color=alt.Color("Scenario:N",
-                                             scale=alt.Scale(range=[TEAL, AMBER, "#7FB3FF", "#C792EA"]),
-                                             legend=alt.Legend(orient="bottom"))))
+                    .encode(x=alt.X("Year:O", axis=alt.Axis(labelAngle=-90)),
+                            y="p50:Q",
+                            color=alt.Color("Scenario:N",
+                                            scale=alt.Scale(range=[TEAL, AMBER, "#7FB3FF", "#C792EA"]),
+                                            legend=alt.Legend(orient="bottom"))))
             st.altair_chart(dark_chart(band + lines, 300), use_container_width=True)
             st.caption(f"Shaded band = 10th–90th percentile for the recommended plan ({best}).")
 

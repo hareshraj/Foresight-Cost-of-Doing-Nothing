@@ -1,26 +1,3 @@
-"""
-train_model.py  (v2 -- respecified after v1 overfit on collinear features)
-==========================================================================
-STEP 3. Learns: state access structure -> state care utilisation (DHS).
-
-Why v2 differs from v1 (the change is correct methodology, not number-chasing):
-  * v1 used 4 collinear access features on 37 states -> Ridge couldn't separate
-    them, coefficients took nonsense signs (share_critical came out positive),
-    and leave-one-out R2 was -1.27 (worse than predicting the mean).
-  * v2 uses 2 non-redundant features: log10(people-per-facility) [access, log to
-    tame skew] and facility density. Regularisation strength (alpha) is chosen
-    by cross-validation (RidgeCV) rather than hard-coded. CV is *nested* LOO:
-    alpha is selected inside each fold so reported error isn't optimistic.
-  * Prints raw feature<->target correlations and a naive (predict-the-mean)
-    baseline, so we judge honestly how much signal access actually carries.
-
-Exports the fitted relationship as slope_util_per_ppf: utilisation pp gained per
-1-person reduction in people-per-facility, which the simulator consumes as
-model_slope_per_ppf.
-
-Run (after build_features.py):  python src/train_model.py
-"""
-
 import sys
 import json
 from pathlib import Path
@@ -53,7 +30,6 @@ def aggregate_to_states(lgas):
         "mean_pop_per_facility": g["pop_per_facility"]
             .apply(lambda s: s.replace([np.inf, -np.inf], np.nan).mean()),
     })
-    # state-level DHS covariate(s) used as features (constant within a state)
     if "women_secondary_edu" in df.columns:
         agg["women_secondary_edu"] = g["women_secondary_edu"].first()
     for short in C.MODEL_TARGET_PREFERENCE:
@@ -70,11 +46,6 @@ def choose_target(state_df):
 
 
 def representative_slope(model, state_df):
-    """
-    Utilisation pp gained per 1-PERSON reduction in people-per-facility, holding
-    every other feature (density, education) at its mean -- i.e. the PARTIAL
-    access effect. Positive = better access -> more care.
-    """
     ppf0 = float(np.nanmedian(state_df["mean_pop_per_facility"]))
     ppf1 = ppf0 * 0.9
     means = {f: float(np.nanmean(state_df[f])) for f in FEATURE_COLS}
