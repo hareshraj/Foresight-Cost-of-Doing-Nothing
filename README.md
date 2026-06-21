@@ -14,7 +14,7 @@ An AI decision-support system for Nigerian state primary-healthcare directors. I
 ## What it does
 
 1. **Finds the deserts.** Combines facility locations, population, and boundaries to score all 774 Local Government Areas (LGAs) by people-per-functional-facility.
-2. **Simulates the cost of waiting.**For any community, project deaths, DALYs, and economic value over 1, 3, 5 years under different interventions (building clinics, deploying staff, fixing supply chains) vs doing nothing, with every figure presented as an uncertainty range, never a single point. **
+2. **Simulates the cost of waiting.** For any community, project deaths, DALYs, and economic value over 1, 3, 5 years under different interventions (building clinics, deploying staff, fixing supply chains) vs doing nothing, with every figure presented as an uncertainty range, never a single point.
 3. **Reaches the communities the data misses.** An offline field-report tool lets workers log settlements with no network signal by hand; zero-signal zones are escalated to critical priority. This closes the exclusion-bias gap, where areas with no digital footprint would otherwise be invisible to the model.
 4. **Stays accountable.** Surfaces model evaluation, bypass conditions (when *not* to trust it), a two-stage human review path, and drift monitoring.
 
