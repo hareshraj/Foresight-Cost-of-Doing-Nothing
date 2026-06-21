@@ -15,94 +15,137 @@ import config as C
 from src.simulator import compare_scenarios, explain_chain
 
 # ──────────────────────────────────────────────────────────────────────────
-# PAGE + DESIGN SYSTEM
-# Palette (named):  ink #0F1B2D · slate #3A4A5E · teal #0E7C7B · mist #F4F6F9
-# Risk ramp kept from config for continuity with the map.
+# PAGE
 # ──────────────────────────────────────────────────────────────────────────
-st.set_page_config(page_title="Healthcare Cost-of-Inaction System",
+st.set_page_config(page_title="Foresight · The Cost of Doing Nothing",
                    page_icon="🩺", layout="wide")
 
-# "Nigerian atlas" palette — luminous green + Benin-bronze gold on forest ink.
-INK      = "#08130E"   # deep forest-black: app base + signature panel
-PANEL    = "#0E1C15"   # dark forest panel / card surface
-LINE     = "#203A2C"   # green-tinted borders
-TEXT     = "#DBE7DE"   # soft warm-white text
-GRAPHITE = "#85A091"   # dim sage (secondary text)
-TEAL     = "#2FC279"   # luminous Nigerian green (brand / signal)
-AMBER    = "#E6B547"   # Benin-bronze gold (warm secondary accent)
-ALARM    = "#FF6B5A"   # critical / cost emphasis (luminous on dark)
-MIST     = INK         # legacy alias → base
-PAPER    = PANEL       # legacy alias → panel surface
-SLATE    = GRAPHITE    # legacy alias
+# ── theme toggle (must come after set_page_config) ─────────────────────────
+_, _tcol = st.columns([8, 1.4])
+with _tcol:
+    light_on = st.toggle("Light mode", value=False)
+DARK = not light_on
+
+# ──────────────────────────────────────────────────────────────────────────
+# DESIGN SYSTEM — one palette, switched by theme.
+# TEAL / AMBER / ALARM are brand accents and stay constant across both modes.
+# ──────────────────────────────────────────────────────────────────────────
+if DARK:
+    INK="#08130E"; PANEL="#0E1C15"; LINE="#203A2C"; TEXT="#DBE7DE"
+    GRAPHITE="#85A091"; GRID="#16281D"; ACCENT="#2FC279"
+    BASEMAP="CartoDB dark_matter"
+    card_sh="0 1px 2px rgba(0,0,0,.3)"; card_hsh="0 14px 36px rgba(0,0,0,.5)"
+    kpi_hsh="0 12px 30px rgba(0,0,0,.5)"; hover_border="#2FC27966"
+    app_bg=("radial-gradient(1200px 580px at 82% -12%, rgba(47,194,121,.13), transparent 60%),"
+            "radial-gradient(960px 540px at -8% 2%, rgba(230,181,71,.08), transparent 58%),"
+            "repeating-radial-gradient(circle at 50% -25%, transparent 0 27px, rgba(47,194,121,.024) 27px 28px)")
+    app_bg_size="auto"
+else:
+    INK="#EDF2EE"; PANEL="#FFFFFF"; LINE="#D6E0D9"; TEXT="#13261C"
+    GRAPHITE="#5C7A68"; GRID="#E4ECE7"; ACCENT="#178A4E"
+    BASEMAP="CartoDB positron"
+    card_sh="0 1px 2px rgba(16,36,43,.05)"; card_hsh="0 12px 28px rgba(16,36,43,.12)"
+    kpi_hsh="0 10px 24px rgba(16,36,43,.12)"; hover_border="#BBD3C6"
+    app_bg=("radial-gradient(1100px 520px at 84% -10%, rgba(47,194,121,.10), transparent 60%),"
+            "radial-gradient(820px 460px at -6% 0%, rgba(230,181,71,.06), transparent 58%),"
+            "radial-gradient(rgba(19,38,28,.05) 1px, transparent 1px)")
+    app_bg_size="auto, auto, 26px 26px"
+
+TEAL="#2FC279"   # brand signal — constant (fills, rings, pills, recommended)
+AMBER="#E6B547"
+ALARM="#FF6B5A"
+HERO1="#08130E"; HERO2="#0b3236"   # signature panel stays dark in both themes
+# legacy aliases
+MIST=INK; PAPER=PANEL; SLATE=GRAPHITE
 
 st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
 html, body, [class*="css"], .stMarkdown, p, span, label {{ font-family:'Public Sans', system-ui, sans-serif; }}
-h1,h2,h3,h4 {{ font-family:'Space Grotesk', system-ui, sans-serif; color:{INK}; letter-spacing:-0.015em; }}
+h1,h2,h3,h4 {{ font-family:'Space Grotesk', system-ui, sans-serif; color:{TEXT}; letter-spacing:-0.015em; }}
+
 .stApp {{
-  background-color:#E7ECEE;
-  background-image:
-    radial-gradient(1100px 480px at 84% -8%, rgba(14,124,107,.13), transparent 60%),
-    radial-gradient(820px 440px at -6% -4%, rgba(16,36,43,.06), transparent 55%),
-    radial-gradient(rgba(16,36,43,.05) 1px, transparent 1px);
-  background-size:auto, auto, 26px 26px;
+  background-color:{INK};
+  background-image:{app_bg};
+  background-size:{app_bg_size};
   background-attachment:fixed;
 }}
 header[data-testid="stHeader"] {{ display:none; }}
-.block-container {{ padding-top:1.5rem; padding-bottom:3rem; max-width:1480px; }}
+.block-container {{ padding-top:1rem; padding-bottom:3rem; max-width:1480px; }}
+
+/* keep body text / widget labels readable in BOTH themes */
+[data-testid="stMarkdownContainer"] p, [data-testid="stMarkdownContainer"] li,
+[data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label, label,
+[data-baseweb="select"] > div > div, [data-testid="stThumbValue"] {{ color:{TEXT}; }}
+[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {{ color:{GRAPHITE}; }}
 
 /* ── masthead ───────────────────────────────────────────── */
+.masthead {{ position:relative; padding:6px 0 2px; }}
+.masthead::before {{ content:''; position:absolute; right:-30px; top:-80px; width:480px; height:360px;
+  background:repeating-radial-gradient(circle at center, transparent 0 21px, rgba(47,194,121,.17) 21px 22px);
+  -webkit-mask:radial-gradient(circle at center,#000 0%,transparent 68%);
+  mask:radial-gradient(circle at center,#000 0%,transparent 68%);
+  pointer-events:none; animation:ringPulse 7s ease-in-out infinite alternate; }}
+@keyframes ringPulse {{ from {{opacity:.4}} to {{opacity:.9}} }}
 .coord {{ font-family:'IBM Plex Mono',monospace; font-size:0.7rem; letter-spacing:0.22em;
-          text-transform:uppercase; color:{TEAL}; }}
-.mast-title {{ font-family:'Space Grotesk'; font-weight:700; font-size:2.6rem; line-height:1.0;
-              color:{INK}; margin:5px 0 7px; letter-spacing:-0.025em; }}
-.mast-thesis {{ font-family:'Space Grotesk'; font-weight:700; font-size:2rem;
-   line-height:1.05; color:{TEAL}; letter-spacing:-0.02em; margin:0 0 15px;
-   text-shadow:0 0 26px rgba(47,194,121,.18); }}
+          text-transform:uppercase; color:{ACCENT}; }}
+.mast-titlerow {{ display:flex; align-items:center; gap:16px; margin:6px 0 2px; }}
+.mast-titlerow .mast-title {{ margin:0; }}
+.mast-title {{ font-family:'Space Grotesk'; font-weight:700; font-size:3.05rem; line-height:1.0;
+   color:{TEXT}; letter-spacing:-0.025em; text-shadow:0 0 34px rgba(47,194,121,.20); }}
+.mast-thesis {{ font-family:'Space Grotesk'; font-weight:700; font-size:2rem; line-height:1.05;
+   color:{ACCENT}; letter-spacing:-0.02em; margin:6px 0 15px; text-shadow:0 0 26px rgba(47,194,121,.18); }}
 .mast-sub {{ color:{GRAPHITE}; font-size:1.12rem; line-height:1.5; max-width:860px; }}
-.tickrule {{ height:10px; margin-top:14px; border-top:1.5px solid {INK}; opacity:0.85;
-   background:repeating-linear-gradient(90deg, {INK} 0 1px, transparent 1px 38px) top/100% 6px no-repeat; }}
+.tickrule {{ height:10px; margin-top:14px; border-top:1.5px solid {ACCENT}; opacity:.55;
+   background:repeating-linear-gradient(90deg,{ACCENT} 0 1px, transparent 1px 38px) top/100% 6px no-repeat; }}
+
+/* ── country flag chip (placeholder for future country selector) ── */
+.flagchip {{ display:inline-flex; align-items:center; gap:7px; padding:8px 10px;
+   border:1px solid {LINE}; border-radius:13px; background:{PANEL}; box-shadow:{card_sh};
+   cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease; }}
+.flagchip:hover {{ transform:translateY(-1px); border-color:{TEAL}; box-shadow:0 6px 16px rgba(47,194,121,.22); }}
+.flagchip .flag {{ width:34px; height:34px; border-radius:7px; display:block;
+   box-shadow:inset 0 0 0 1px rgba(0,0,0,.14); }}
+.flagchip .chev {{ width:13px; height:13px; opacity:.65; }}
 
 /* ── instrument-readout KPI cards ───────────────────────── */
 .kpi-row {{ display:flex; gap:12px; flex-wrap:wrap; margin:20px 0 4px; }}
-.kpi {{ flex:1; min-width:152px; background:{PAPER}; border:1px solid {LINE}; border-radius:12px;
+.kpi {{ flex:1; min-width:152px; background:{PANEL}; border:1px solid {LINE}; border-radius:12px;
         padding:14px 16px 15px; position:relative; overflow:hidden;
         transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }}
-.kpi:hover {{ transform:translateY(-3px); box-shadow:0 10px 24px rgba(16,36,43,.10); border-color:#C4D0D2; }}
+.kpi:hover {{ transform:translateY(-3px); box-shadow:{kpi_hsh}; border-color:{hover_border}; }}
 .kpi::before {{ content:''; position:absolute; top:0; left:18px; width:30px; height:3px;
                 background:linear-gradient(90deg, {TEAL}, #1E9E5C); transition:width .22s ease; }}
-.kpi:hover::before {{ width:54px; }}
+.kpi:hover::before {{ width:54px; box-shadow:0 0 14px {TEAL}; }}
 .kpi.alarm::before {{ background:linear-gradient(90deg, {ALARM}, #D9613F); }}
 .kpi .lab {{ font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:0.13em;
              text-transform:uppercase; color:{GRAPHITE}; }}
-.kpi .val {{ font-family:'Space Grotesk'; font-weight:700; font-size:1.85rem; color:{INK};
+.kpi .val {{ font-family:'Space Grotesk'; font-weight:700; font-size:1.85rem; color:{TEXT};
              line-height:1.1; margin-top:7px; }}
 .kpi.alarm .val {{ color:{ALARM}; }}
 .kpi .sub {{ font-size:0.7rem; color:{GRAPHITE}; margin-top:2px; }}
 
 /* ── shared ─────────────────────────────────────────────── */
 .eyebrow {{ font-family:'IBM Plex Mono',monospace; font-size:0.66rem; letter-spacing:0.18em;
-            text-transform:uppercase; color:{TEAL}; margin-bottom:3px; }}
-.card {{ background:{PAPER}; border:1px solid {LINE}; border-radius:14px; padding:18px 20px;
-         color:{INK}; box-shadow:0 1px 2px rgba(16,36,43,.04);
+            text-transform:uppercase; color:{ACCENT}; margin-bottom:3px; }}
+.card {{ background:{PANEL}; border:1px solid {LINE}; border-radius:14px; padding:18px 20px;
+         color:{TEXT}; box-shadow:{card_sh};
          transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease; }}
-.card:hover {{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(16,36,43,.09); border-color:#C4D0D2; }}
+.card:hover {{ transform:translateY(-2px); box-shadow:{card_hsh}; border-color:{hover_border}; }}
 .card small {{ color:{GRAPHITE}; }}
 .num {{ font-family:'IBM Plex Mono',monospace; }}
 .pill {{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:0.7rem;
          font-weight:600; font-family:'IBM Plex Mono'; }}
 
-/* ── signature panel: cost of doing nothing ─────────────── */
+/* ── signature panel: cost of doing nothing (dark in both themes) ─ */
 .hero {{ position:relative; color:#fff; border-radius:16px; padding:28px 30px; overflow:hidden;
    background:
      repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 30px),
      repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, transparent 1px 30px),
-     linear-gradient(135deg, {INK} 0%, #0b3236 100%);
+     linear-gradient(135deg, {HERO1} 0%, {HERO2} 100%);
    background-size:30px 30px, 30px 30px, 100% 100%;
-   animation:heroDrift 34s linear infinite;
-   transition:box-shadow .25s ease; }}
+   animation:heroDrift 34s linear infinite; transition:box-shadow .25s ease; }}
 @keyframes heroDrift {{ to {{ background-position:30px 30px, -30px 30px, 0 0; }} }}
 .hero:hover {{ box-shadow:0 16px 44px rgba(11,50,54,.32); }}
 .hero::after {{ content:''; position:absolute; top:0; left:0; width:88px; height:4px; background:{ALARM}; }}
@@ -114,66 +157,26 @@ header[data-testid="stHeader"] {{ display:none; }}
 .stTabs [data-baseweb="tab-list"] {{ gap:2px; border-bottom:1px solid {LINE}; }}
 .stTabs [data-baseweb="tab"] {{ font-family:'Space Grotesk'; font-weight:600; font-size:0.9rem;
                                 color:{GRAPHITE}; padding:10px 14px; }}
-.stTabs [aria-selected="true"] {{ color:{INK}; }}
+.stTabs [aria-selected="true"] {{ color:{TEXT}; }}
+.stTabs [data-baseweb="tab"]:hover {{ color:{TEXT}; }}
 .stTabs [data-baseweb="tab-highlight"] {{ background:{TEAL}; height:2px; }}
-[data-baseweb="select"] > div {{ border-radius:9px; border-color:{LINE}; }}
-[data-testid="stExpander"] {{ border:1px solid {LINE}; border-radius:12px; background:{PAPER}; }}
-[data-testid="stExpander"] summary {{ font-family:'Space Grotesk'; font-weight:600; color:{INK}; }}
+[data-baseweb="select"] > div {{ border-radius:9px; border-color:{LINE}; background:{PANEL}; }}
+[data-testid="stExpander"] {{ border:1px solid {LINE}; border-radius:12px; background:{PANEL};
+    transition:border-color .18s ease, box-shadow .18s ease; }}
+[data-testid="stExpander"]:hover {{ border-color:{hover_border}; box-shadow:{card_sh}; }}
+[data-testid="stExpander"] summary {{ font-family:'Space Grotesk'; font-weight:600; color:{TEXT}; }}
 .stButton>button, [data-testid="stFormSubmitButton"]>button {{
-    font-family:'Space Grotesk'; font-weight:600; border-radius:9px; }}
-[data-testid="stMetricValue"] {{ font-family:'Space Grotesk'; color:{INK}; }}
+    font-family:'Space Grotesk'; font-weight:600; border-radius:9px;
+    transition:transform .15s ease, box-shadow .15s ease; }}
+.stButton>button:hover, [data-testid="stFormSubmitButton"]>button:hover {{
+    transform:translateY(-1px); box-shadow:0 6px 16px rgba(47,194,121,.28); }}
+[data-testid="stMetricValue"] {{ font-family:'Space Grotesk'; color:{TEXT}; }}
 [data-testid="stMetricLabel"] p {{ font-family:'IBM Plex Mono'; font-size:0.72rem;
     letter-spacing:0.06em; color:{GRAPHITE}; }}
 [data-testid="stDataFrame"] {{ font-family:'Public Sans'; }}
-.stTabs [data-baseweb="tab"]:hover {{ color:{INK}; }}
-.stButton>button, [data-testid="stFormSubmitButton"]>button {{ transition:transform .15s ease, box-shadow .15s ease; }}
-.stButton>button:hover, [data-testid="stFormSubmitButton"]>button:hover {{
-    transform:translateY(-1px); box-shadow:0 6px 16px rgba(14,124,107,.28); }}
-[data-testid="stExpander"] {{ transition:border-color .18s ease, box-shadow .18s ease; }}
-[data-testid="stExpander"]:hover {{ border-color:#C4D0D2; box-shadow:0 6px 18px rgba(16,36,43,.06); }}
 @media (prefers-reduced-motion: reduce) {{
   *, .hero {{ animation:none !important; transition:none !important; }}
 }}
-</style>""", unsafe_allow_html=True)
-
-st.markdown(f"""
-<style>
-.stApp {{
-  background-color:{INK};
-  background-image:
-    radial-gradient(1200px 580px at 82% -12%, rgba(47,194,121,.13), transparent 60%),
-    radial-gradient(960px 540px at -8% 2%, rgba(230,181,71,.08), transparent 58%),
-    repeating-radial-gradient(circle at 50% -25%, transparent 0 27px, rgba(47,194,121,.024) 27px 28px);
-  background-attachment:fixed;
-}}
-h1,h2,h3,h4 {{ color:{TEXT}; }}
-
-/* masthead with glowing contour rings */
-.masthead {{ position:relative; padding:10px 0 2px; }}
-.masthead::before {{ content:''; position:absolute; right:-30px; top:-86px; width:480px; height:360px;
-  background:repeating-radial-gradient(circle at center, transparent 0 21px, rgba(47,194,121,.17) 21px 22px);
-  -webkit-mask:radial-gradient(circle at center,#000 0%,transparent 68%);
-  mask:radial-gradient(circle at center,#000 0%,transparent 68%);
-  pointer-events:none; animation:ringPulse 7s ease-in-out infinite alternate; }}
-@keyframes ringPulse {{ from {{opacity:.45}} to {{opacity:.95}} }}
-.mast-title {{ color:{TEXT}; font-size:3.05rem; text-shadow:0 0 34px rgba(47,194,121,.20); }}
-.mast-sub {{ color:{GRAPHITE}; }}
-.tickrule {{ border-top-color:{TEAL}; opacity:.6;
-  background:repeating-linear-gradient(90deg,{TEAL} 0 1px, transparent 1px 38px) top/100% 6px no-repeat; }}
-
-/* dark panels + glow hovers */
-.card {{ color:{TEXT}; box-shadow:0 1px 2px rgba(0,0,0,.3); }}
-.card:hover {{ box-shadow:0 14px 36px rgba(0,0,0,.5); border-color:{TEAL}66; }}
-.kpi .val {{ color:{TEXT}; }}
-.kpi:hover {{ box-shadow:0 12px 30px rgba(0,0,0,.5); border-color:{TEAL}66; }}
-.kpi:hover::before {{ box-shadow:0 0 14px {TEAL}; }}
-
-/* native chrome on dark */
-.stTabs [aria-selected="true"] {{ color:{TEXT}; }}
-.stTabs [data-baseweb="tab"]:hover {{ color:{TEXT}; }}
-[data-testid="stExpander"] summary {{ color:{TEXT}; }}
-[data-testid="stMetricValue"] {{ color:{TEXT}; }}
-[data-baseweb="select"] > div {{ background:{PANEL}; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -223,11 +226,11 @@ def ppf_str(v):
 
 
 def dark_chart(ch, height=300):
-    """Apply the dark atlas theme to an Altair chart."""
+    """Apply the active-theme atlas styling to an Altair chart."""
     return (ch.properties(height=height)
             .configure(background="transparent")
             .configure_view(stroke=None)
-            .configure_axis(labelColor=TEXT, titleColor=GRAPHITE, gridColor="#16281D",
+            .configure_axis(labelColor=TEXT, titleColor=GRAPHITE, gridColor=GRID,
                             domainColor=LINE, tickColor=LINE,
                             labelFont="Public Sans", titleFont="Space Grotesk")
             .configure_legend(labelColor=TEXT, titleColor=GRAPHITE, labelFont="Public Sans"))
@@ -238,10 +241,23 @@ def dark_chart(ch, height=300):
 # ──────────────────────────────────────────────────────────────────────────
 crit = lgas[lgas.risk_level == "critical"]
 
+flag_svg = (
+    '<svg class="flag" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">'
+    '<rect width="36" height="36" fill="#ffffff"/>'
+    '<rect width="12" height="36" fill="#008751"/>'
+    '<rect x="24" width="12" height="36" fill="#008751"/></svg>')
+chev_svg = (
+    f'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="{GRAPHITE}" '
+    'stroke-width="3" stroke-linecap="round" stroke-linejoin="round">'
+    '<path d="M6 9l6 6 6-6"/></svg>')
+
 st.markdown(f"""
 <div class="masthead">
 <div class="coord">Primary Healthcare Intelligence · Federal Republic of Nigeria · 9°08′N 8°40′E</div>
-<div class="mast-title">Foresight</div>
+<div class="mast-titlerow">
+  <span class="flagchip" title="Nigeria — more coverage areas coming soon">{flag_svg}{chev_svg}</span>
+  <span class="mast-title">Foresight</span>
+</div>
 <div class="mast-thesis">The Cost of Doing Nothing</div>
 <div class="mast-sub">Across Nigeria's {len(lgas):,} local government areas, this system finds the
 <b style="color:{TEXT}">healthcare deserts</b> and models what waiting costs —
@@ -296,7 +312,7 @@ with tab_map:
     with left:
         st.markdown(f'<div class="eyebrow">Clinical access risk · {len(flt)} LGAs shown</div>',
                     unsafe_allow_html=True)
-        m = folium.Map(location=[9.1, 8.1], zoom_start=6, tiles="CartoDB dark_matter",
+        m = folium.Map(location=[9.1, 8.1], zoom_start=6, tiles=BASEMAP,
                        min_zoom=5, max_zoom=12, max_bounds=True)
         if sel_state:                                # zoom to the selected state(s)
             _b = flt.total_bounds  # minx, miny, maxx, maxy
@@ -314,7 +330,7 @@ with tab_map:
                       if r.needs_human_review else "")
             popup = f"""
             <div style='font-family:Inter,sans-serif;min-width:230px'>
-              <div style='font-weight:700;font-size:14px;color:{INK}'>{r.lga_name}</div>
+              <div style='font-weight:700;font-size:14px;color:#0F1B2D'>{r.lga_name}</div>
               <small>{r.state_name}</small>
               <div style='margin:6px 0'><span class='pill' style='background:{color};color:#fff'>
                 {r.risk_level.upper()}</span>
@@ -418,7 +434,7 @@ with tab_sim:
     with c2:
         st.markdown(
             f"<div class='card'><div class='eyebrow'>Selected community</div>"
-            f"<div style='font-family:Archivo;font-weight:700;font-size:1.3rem'>{lga.lga_name}"
+            f"<div style='font-family:Space Grotesk;font-weight:700;font-size:1.3rem'>{lga.lga_name}"
             f"<span style='font-weight:400;color:{SLATE}'> · {lga.state_name}</span></div>"
             f"<div style='display:flex;gap:26px;margin-top:8px;flex-wrap:wrap'>"
             f"<div><small>Population</small><br><span class='num' style='font-size:1.1rem'>{int(lga.population):,}</span></div>"
@@ -460,19 +476,19 @@ with tab_sim:
             h5 = res[name][5]
             d = h5["deaths_averted"]
             is_best = (name == best)
-            border = TEAL if is_best else "#E4E9F0"
+            border = TEAL if is_best else LINE
             tag = (f"<span class='pill' style='background:{TEAL};color:#fff'>RECOMMENDED</span>"
                    if is_best else "")
             col.markdown(
                 f"<div class='card' style='border:2px solid {border}'>"
-                f"<div style='font-family:Archivo;font-weight:700'>{name}</div>{tag}"
+                f"<div style='font-family:Space Grotesk;font-weight:700'>{name}</div>{tag}"
                 f"<div style='margin-top:10px'><small>Deaths averted (p50)</small><br>"
                 f"<span class='num' style='font-size:1.5rem;color:{TEXT}'>{d['p50']:.0f}</span>"
                 f"<small> &nbsp;{d['p10']:.0f}–{d['p90']:.0f}</small></div>"
                 f"<div style='margin-top:8px'><small>Intervention cost</small><br>"
                 f"<span class='num'>{money(h5['intervention_cost_usd'])}</span></div>"
                 f"<div style='margin-top:6px'><small>Net benefit (p50)</small><br>"
-                f"<span class='num' style='color:{TEAL};font-weight:600'>{money(h5['net_benefit_usd'])}</span></div>"
+                f"<span class='num' style='color:{ACCENT};font-weight:600'>{money(h5['net_benefit_usd'])}</span></div>"
                 f"</div>", unsafe_allow_html=True)
 
         # ── plain-language "how this number is built" ─────────────────────
@@ -481,9 +497,9 @@ with tab_sim:
 
         def step(n, t):
             return (f"<div style='flex:1;min-width:175px'>"
-                    f"<div class='num' style='color:{TEAL};font-weight:600;font-size:0.8rem'>{n}</div>"
+                    f"<div class='num' style='color:{ACCENT};font-weight:600;font-size:0.8rem'>{n}</div>"
                     f"<div style='font-size:0.88rem;margin-top:3px'>{t}</div></div>")
-        arrow = "<div style='align-self:center;color:#9AA8B8;font-size:1.3rem'>→</div>"
+        arrow = f"<div style='align-self:center;color:{GRAPHITE};font-size:1.3rem'>→</div>"
 
         st.write("")
         st.markdown(
@@ -551,11 +567,11 @@ with tab_sim:
                 f"<div style='display:flex;justify-content:space-between;padding:6px 0'>"
                 f"<span>Act now — deaths averted</span>"
                 f"<b class='num'>{h5['deaths_averted']['p50']:.0f}</b></div>"
-                f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid #eee'>"
+                f"<div style='display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid {LINE}'>"
                 f"<span>Wait 5 years — deaths averted</span><b class='num'>~0</b></div>"
                 f"<div style='display:flex;justify-content:space-between;padding:8px 0;border-top:2px solid {LINE};margin-top:4px'>"
                 f"<span><b>Cost of the delay</b></span>"
-                f"<b class='num' style='color:#d62728'>{h5['deaths_averted']['p50']:.0f} lives · {money(h5['cost_of_inaction_usd'])}</b></div>"
+                f"<b class='num' style='color:{ALARM}'>{h5['deaths_averted']['p50']:.0f} lives · {money(h5['cost_of_inaction_usd'])}</b></div>"
                 f"<div style='margin-top:8px'><small>Benefits compound annually; a plan started in year 5 "
                 f"delivers almost none of its value within this 5-year window.</small></div>"
                 f"</div>", unsafe_allow_html=True)
