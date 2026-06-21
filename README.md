@@ -97,7 +97,3 @@ src/
 Haresh Raj,
 Muhammad Saad Umar,
 Jesutomiwo Sapphire
-
-## License
-
-MIT — see [LICENSE](LICENSE).
