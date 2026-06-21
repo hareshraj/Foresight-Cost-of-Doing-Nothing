@@ -22,7 +22,7 @@ st.set_page_config(page_title="Foresight · The Cost of Doing Nothing",
 
 _, _tcol = st.columns([11, 0.5])
 with _tcol:
-    DARK = st.toggle(" ", value=True)
+    DARK = st.toggle("🌙", value=True)
 
 # ──────────────────────────────────────────────────────────────────────────
 # DESIGN SYSTEM — one palette, switched by theme.
