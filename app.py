@@ -20,9 +20,9 @@ from src.simulator import compare_scenarios, explain_chain
 st.set_page_config(page_title="Foresight · The Cost of Doing Nothing",
                    page_icon="🩺", layout="wide")
 
-_, _tcol = st.columns([11, 1.2])
+_, _tcol = st.columns([11, 0.5])
 with _tcol:
-    DARK = st.toggle("🌙 Dark", value=True)
+    DARK = st.toggle(" ", value=True)
 
 # ──────────────────────────────────────────────────────────────────────────
 # DESIGN SYSTEM — one palette, switched by theme.
