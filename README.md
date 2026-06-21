@@ -1,9 +1,9 @@
 # Foresight
 ### The Cost of Doing Nothing
 
-**USAII Global AI Hackathon 2026 · Graduate Track · Challenge 6 (Direction A — The Cost of Doing Nothing Simulator)**
+**USAII Global AI Hackathon 2026 · Graduate Track · Challenge 6 (Direction A: The Cost of Doing Nothing Simulator)**
 
-An AI decision-support system for Nigerian state primary-healthcare directors. It locates underserved communities ("healthcare deserts"), then **models the long-term human and economic cost of delaying intervention** — so allocation decisions are proactive and evidence-based instead of reactive.
+An AI decision-support system for Nigerian state primary-healthcare directors. It identifies underserved communities ("healthcare deserts"), then **models the long-term human and economic costs of delaying intervention** so that allocation decisions are proactive and evidence-based instead of reactive.
 
 > It **informs** allocation decisions. It does **not** make them. (See *Human-in-the-loop*.)
 
@@ -12,7 +12,7 @@ An AI decision-support system for Nigerian state primary-healthcare directors. I
 ## What it does
 
 1. **Finds the deserts.** Combines facility locations, population, and boundaries to score all 774 Local Government Areas (LGAs) by people-per-functional-facility.
-2. **Simulates the cost of waiting.** For any community, projects deaths, DALYs, and economic value over 1/3/5 years under different interventions (build clinics, deploy staff, fix supply chains) vs. doing nothing — every figure as an uncertainty range, never a single point.
+2. **Simulates the cost of waiting.** For any community, project deaths, DALYs, and economic value over 1, 3, 5 years under different interventions (building clinics, deploying staff, fixing supply chains) vs doing nothing, with every figure presented as an uncertainty range, never a single point. **
 3. **Reaches the communities the data misses.** An offline field-report tool lets workers log settlements with no network signal by hand; zero-signal zones are escalated to critical priority. This closes the exclusion-bias gap, where areas with no digital footprint would otherwise be invisible to the model.
 4. **Stays accountable.** Surfaces model evaluation, bypass conditions (when *not* to trust it), a two-stage human review path, and drift monitoring.
 
@@ -47,9 +47,9 @@ streamlit run app.py
 
 Needed only if you want to re-run the data pipeline. First download the raw sources into `data/raw/`:
 
-- **GRID3 Nigeria Health Facilities v2.0** — https://grid3.org / https://data.grid3.org
-- **WorldPop 2020 UN-adjusted constrained (Nigeria)** — https://hub.worldpop.org
-- **HDX / OCHA admin boundaries (admin2)** — https://data.humdata.org
+- **GRID3 Nigeria Health Facilities v2.0** : https://grid3.org / https://data.grid3.org
+- **WorldPop 2020 UN-adjusted constrained (Nigeria)** : https://hub.worldpop.org
+- **HDX / OCHA admin boundaries (admin2)** : https://data.humdata.org
 
 Then:
 
@@ -62,7 +62,7 @@ streamlit run app.py
 
 ## The model (in one paragraph)
 
-Risk tiers are **rule-based** and transparent (people-per-facility vs WHO-aligned thresholds). A separate **learned model** (Ridge regression, regularisation chosen by nested leave-one-state-out CV) predicts care utilisation (facility delivery) from access structure **controlling for women's secondary education**, the dominant driver. Adding that confounder lifted leave-one-state-out R² from −0.62 to **+0.68** (MAE 12pp vs 23pp naive). The key insight: building clinics is a **real but bounded** lever — demand-side factors carry most of the weight — so the simulator uses only the *partial* access effect and never over-credits construction.
+Risk tiers are **rule-based** and transparent (people-per-facility vs WHO-aligned thresholds). A separate **learned model** (Ridge regression, regularisation chosen by nested leave-one-state-out CV) predicts care utilisation (facility delivery) from access structure **controlling for women's secondary education**, the dominant driver. Adding that confounder lifted leave-one-state-out R² from −0.62 to **+0.68** (MAE 12pp vs 23pp naive). The key insight: building clinics is a **real but bounded** lever, demand-side factors carry most of the weight, so the simulator uses only the *partial* access effect and never over-credits construction.
 
 ## Data sources
 
@@ -93,6 +93,8 @@ src/
 ```
 
 ## Team
+
+**The Exceptions**
 
 Haresh Raj,
 Muhammad Saad Umar,
